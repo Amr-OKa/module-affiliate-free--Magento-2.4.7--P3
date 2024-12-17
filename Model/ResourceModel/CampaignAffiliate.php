@@ -21,6 +21,8 @@
 
 namespace Lof\Affiliate\Model\ResourceModel;
 
+use Magento\Framework\Exception\LocalizedException;
+
 class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
 {
     /**
@@ -114,6 +116,7 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
      *
      * @param \Magento\Framework\Model\AbstractModel $object
      * @return $this
+     * @throws LocalizedException
      */
     protected function _afterSave(\Magento\Framework\Model\AbstractModel $object)
     {
@@ -129,10 +132,11 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
                 try {
                     $this->getConnection()->insertMultiple($table, $data);
                 } catch (\Exception $e) {
-                    throw new FrameworkException ($e->getMessage());
+                    throw new LocalizedException(__('An error occurred while saving the store data: %1', $e->getMessage()));
                 }
             }
         }
+
         $postData = $object->getData();
         if (isset($postData['groups'])) {
             $newGroups = (array)$postData['groups'];
@@ -197,7 +201,8 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
     {
         $select = parent::_getLoadSelect($field, $value, $object);
 
-        if ($object->getStoreId()) {
+        // Ensure 'is_active' column exists before using it in the query
+        if ($this->columnExists('lof_affiliate_campaign', 'is_active') && $object->getStoreId()) {
             $stores = [(int)$object->getStoreId(), \Magento\Store\Model\Store::DEFAULT_STORE_ID];
 
             $select->join(
@@ -221,6 +226,21 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
     }
 
     /**
+     * Check if a column exists in a table.
+     * This helper function can be used to check for the 'is_active' column.
+     *
+     * @param string $tableName
+     * @param string $columnName
+     * @return bool
+     */
+    protected function columnExists($tableName, $columnName)
+    {
+        $connection = $this->getConnection();
+        $columns = $connection->describeTable($this->getTable($tableName));
+        return isset($columns[$columnName]);
+    }
+
+    /**
      * Check for unique of identifier of block to selected store(s).
      *
      * @param \Magento\Framework\Model\AbstractModel $object
@@ -229,12 +249,26 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
      */
     public function getIsUniqueBlockToStores(\Magento\Framework\Model\AbstractModel $object)
     {
+        // Ensure 'stores' is set and valid
+        $stores = [];
         if ($this->_storeManager->hasSingleStore()) {
             $stores = [\Magento\Store\Model\Store::DEFAULT_STORE_ID];
-        } else {
+        } elseif ($object->getData('stores')) {
             $stores = (array)$object->getData('stores');
         }
 
+        // Validate that stores are present
+        if (empty($stores)) {
+            return true; // No stores, so it should be unique
+        }
+
+        // Ensure identifier is available before proceeding
+        $identifier = $object->getData('identifier');
+        if (empty($identifier)) {
+            return true; // No identifier, so consider it unique
+        }
+
+        // Prepare the database select query
         $select = $this->getConnection()->select()->from(
             ['cb' => $this->getMainTable()]
         )->join(
@@ -243,21 +277,30 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
             []
         )->where(
             'cb.identifier = ?',
-            $object->getData('identifier')
+            $identifier
         )->where(
             'cbs.store_id IN (?)',
             $stores
         );
 
+        // Exclude current record if it has an ID
         if ($object->getId()) {
             $select->where('cb.campaign_id <> ?', $object->getId());
         }
 
-        if ($this->getConnection()->fetchRow($select)) {
-            return false;
+        try {
+            // Execute the query and check if the result exists
+            if ($this->getConnection()->fetchRow($select)) {
+                return false; // Duplicate found, not unique
+            }
+        } catch (\Exception $e) {
+            // Log the error if needed (optional)
+            \Magento\Framework\App\ObjectManager::getInstance()
+                ->get(\Psr\Log\LoggerInterface::class)
+                ->error('Error in getIsUniqueBlockToStores: ' . $e->getMessage());
         }
 
-        return true;
+        return true; // No duplicates found, unique
     }
 
     /**
@@ -282,7 +325,12 @@ class CampaignAffiliate extends \Magento\Framework\Model\ResourceModel\Db\Abstra
         return $connection->fetchCol($select, $binds);
     }
 
-
+    /**
+     * Get group ids to which specified item is assigned
+     *
+     * @param int $id
+     * @return array
+     */
     public function lookupGroupIds($id)
     {
         $connection = $this->getConnection();
