@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Lof\Affiliate\Controller\Account\Create">
+        <arguments>
+            <argument name="context" xsi:type="object">Magento\Framework\App\Action\Context</argument>
+            <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session</argument>
+            <argument name="resultPageFactory" xsi:type="object">Magento\Framework\View\Result\PageFactory</argument>
+            <argument name="registration" xsi:type="object">Magento\Customer\Model\Registration</argument>
+            <argument name="helper" xsi:type="object">Lof\Affiliate\Helper\Data</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+</config>

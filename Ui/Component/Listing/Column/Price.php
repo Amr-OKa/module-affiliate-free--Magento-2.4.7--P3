@@ -52,8 +52,12 @@ class Price extends Column
         if (isset($dataSource['data']['items'])) {
             foreach ($dataSource['data']['items'] as & $item) {
                 $currencyCode = isset($item['base_currency_code']) ? $item['base_currency_code'] : null;
+
+                // Check if 'balance' exists in the item array before accessing it
+                $price = isset($item[$this->getData('name')]) ? $item[$this->getData('name')] : 0;
+
                 $item[$this->getData('name')] = $this->priceFormatter->format(
-                    $item[$this->getData('name')],
+                    $price,
                     false,
                     PriceCurrencyInterface::DEFAULT_PRECISION,
                     null,

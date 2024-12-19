@@ -1,169 +1,90 @@
 <?php
-/**
- * Copyright © 2016 Magento. All rights reserved.
- * See COPYING.txt for license details.
- */
 
 namespace Lof\Affiliate\Controller\Account;
 
 use Magento\Customer\Model\Account\Redirect as AccountRedirect;
-use Magento\Customer\Api\Data\AddressInterface;
-use Magento\Framework\Api\DataObjectHelper;
-use Magento\Framework\App\Action\Context;
 use Magento\Customer\Model\Session;
-
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\StoreManagerInterface;
-use Magento\Customer\Api\AccountManagementInterface;
-use Magento\Customer\Helper\Address;
-use Magento\Framework\UrlFactory;
-use Magento\Customer\Model\Metadata\FormFactory;
-use Magento\Newsletter\Model\SubscriberFactory;
-use Magento\Customer\Api\Data\RegionInterfaceFactory;
-use Magento\Customer\Api\Data\AddressInterfaceFactory;
-use Magento\Customer\Api\Data\CustomerInterfaceFactory;
-use Magento\Customer\Model\Url as CustomerUrl;
-use Magento\Customer\Model\Registration;
-use Magento\Framework\Escaper;
-use Magento\Customer\Model\CustomerExtractor;
+use Magento\Framework\App\Action\Context;
 use Magento\Framework\Exception\StateException;
 use Magento\Framework\Exception\InputException;
-
-use Magento\Framework\Stdlib\DateTime\Timezone;
+use Magento\Framework\UrlFactory;
+use Magento\Customer\Model\Registration;
+use Magento\Customer\Api\AccountManagementInterface;
+use Magento\Newsletter\Model\SubscriberFactory;
+use Magento\Framework\Escaper;
 use Lof\Affiliate\Model\AccountAffiliate;
 use Lof\Affiliate\Helper\Data as AffiliateData;
+use Magento\Customer\Model\CustomerExtractor;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Customer\Api\Data\CustomerInterfaceFactory;
+use Magento\Customer\Model\Url as CustomerUrl;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Stdlib\DateTime\Timezone;
+use Magento\Framework\Api\DataObjectHelper;
+use Magento\Customer\Api\Data\RegionInterfaceFactory;
+use Magento\Customer\Api\Data\AddressInterfaceFactory;
 
 /**
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * Account creation controller for affiliate account management
  */
 class CreatePost extends \Magento\Customer\Controller\AbstractAccount
 {
-    /** @var AccountManagementInterface */
     protected $accountManagement;
-
-    /** @var Address */
     protected $addressHelper;
-
-    /** @var FormFactory */
     protected $formFactory;
-
-    /** @var SubscriberFactory */
     protected $subscriberFactory;
-
-    /** @var RegionInterfaceFactory */
     protected $regionDataFactory;
-
-    /** @var AddressInterfaceFactory */
     protected $addressDataFactory;
-
-    /** @var Registration */
-    protected $registration;
-
-    /** @var CustomerInterfaceFactory */
     protected $customerDataFactory;
-
-    /** @var CustomerUrl */
     protected $customerUrl;
-
-    /** @var Escaper */
     protected $escaper;
-
-    /** @var CustomerExtractor */
     protected $customerExtractor;
-
-    /** @var \Magento\Framework\UrlInterface */
     protected $urlModel;
-
-    /** @var DataObjectHelper */
     protected $dataObjectHelper;
-
-    /**
-     * @var Session
-     */
-    protected $session;
-
-    /**
-     * @var AccountRedirect
-     */
-    private $accountRedirect;
-    /**
-     * @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
-     */
-    private $cookieMetadataFactory;
-
-    /**
-     * @var \Magento\Framework\Stdlib\Cookie\PhpCookieManager
-     */
-    private $cookieMetadataManager;
-
-    /**
-     * @var \Affiliate
-     */
+    protected $accountRedirect;
     protected $_stdTimezone;
     protected $_accountAffiliate;
     protected $_affiliateData;
     protected $scopeConfig;
     protected $storeManager;
+    protected $session;
 
-    /**
-     * @param Context $context
-     * @param Session $customerSession
-     * @param ScopeConfigInterface $scopeConfig
-     * @param StoreManagerInterface $storeManager
-     * @param AccountManagementInterface $accountManagement
-     * @param Address $addressHelper
-     * @param UrlFactory $urlFactory
-     * @param FormFactory $formFactory
-     * @param SubscriberFactory $subscriberFactory
-     * @param RegionInterfaceFactory $regionDataFactory
-     * @param AddressInterfaceFactory $addressDataFactory
-     * @param CustomerInterfaceFactory $customerDataFactory
-     * @param CustomerUrl $customerUrl
-     * @param Registration $registration
-     * @param Escaper $escaper
-     * @param CustomerExtractor $customerExtractor
-     * @param DataObjectHelper $dataObjectHelper
-     * @param AccountRedirect $accountRedirect
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
-     */
+    // Add the registration property here
+    protected $registration;
+
     public function __construct(
         Context $context,
         Session $customerSession,
         ScopeConfigInterface $scopeConfig,
         StoreManagerInterface $storeManager,
         AccountManagementInterface $accountManagement,
-        Address $addressHelper,
-        UrlFactory $urlFactory,
-        FormFactory $formFactory,
+        \Magento\Framework\Data\Form\FormKey\Validator $formFactory,
         SubscriberFactory $subscriberFactory,
         RegionInterfaceFactory $regionDataFactory,
         AddressInterfaceFactory $addressDataFactory,
         CustomerInterfaceFactory $customerDataFactory,
         CustomerUrl $customerUrl,
-        Registration $registration,
+        Registration $registration, // Inject Registration service here
         Escaper $escaper,
         CustomerExtractor $customerExtractor,
         DataObjectHelper $dataObjectHelper,
         AccountRedirect $accountRedirect,
         Timezone $stdTimezone,
         AccountAffiliate $accountAffiliate,
-        AffiliateData $affiliateData
+        AffiliateData $affiliateData,
+        UrlFactory $urlFactory
     ) {
         $this->session = $customerSession;
         $this->scopeConfig = $scopeConfig;
-        $this->storeManager = $storeManager;
-        $this->accountManagement = $accountManagement;
-        $this->addressHelper = $addressHelper;
         $this->formFactory = $formFactory;
+        $this->registration = $registration; // Initialize the registration service
+        $this->accountManagement = $accountManagement;
         $this->subscriberFactory = $subscriberFactory;
         $this->regionDataFactory = $regionDataFactory;
         $this->addressDataFactory = $addressDataFactory;
         $this->customerDataFactory = $customerDataFactory;
         $this->customerUrl = $customerUrl;
-        $this->registration = $registration;
         $this->escaper = $escaper;
-        $this->customerExtractor = $customerExtractor;
         $this->urlModel = $urlFactory->create();
         $this->dataObjectHelper = $dataObjectHelper;
         $this->accountRedirect = $accountRedirect;
@@ -173,43 +94,6 @@ class CreatePost extends \Magento\Customer\Controller\AbstractAccount
         parent::__construct($context);
     }
 
-    /**
-     * Retrieve cookie manager
-     *
-     * @return \Magento\Framework\Stdlib\Cookie\PhpCookieManager
-     * @deprecated
-     */
-    private function getCookieManager()
-    {
-        if (!$this->cookieMetadataManager) {
-            $this->cookieMetadataManager = \Magento\Framework\App\ObjectManager::getInstance()->get(
-                \Magento\Framework\Stdlib\Cookie\PhpCookieManager::class
-            );
-        }
-        return $this->cookieMetadataManager;
-    }
-
-    /**
-     * Retrieve cookie metadata factory
-     *
-     * @return \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
-     * @deprecated
-     */
-    private function getCookieMetadataFactory()
-    {
-        if (!$this->cookieMetadataFactory) {
-            $this->cookieMetadataFactory = \Magento\Framework\App\ObjectManager::getInstance()->get(
-                \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory::class
-            );
-        }
-        return $this->cookieMetadataFactory;
-    }
-
-    /**
-     * Add address to customer during create account
-     *
-     * @return AddressInterface|null
-     */
     protected function extractAddress()
     {
         if (!$this->getRequest()->getPost('create_address')) {
@@ -218,68 +102,55 @@ class CreatePost extends \Magento\Customer\Controller\AbstractAccount
 
         $addressForm = $this->formFactory->create('customer_address', 'customer_register_address');
         $allowedAttributes = $addressForm->getAllowedAttributes();
-
         $addressData = [];
 
         $regionDataObject = $this->regionDataFactory->create();
         foreach ($allowedAttributes as $attribute) {
             $attributeCode = $attribute->getAttributeCode();
             $value = $this->getRequest()->getParam($attributeCode);
-            if ($value === null) {
-                continue;
-            }
-            switch ($attributeCode) {
-                case 'region_id':
+            if ($value !== null) {
+                if ($attributeCode === 'region_id') {
                     $regionDataObject->setRegionId($value);
-                    break;
-                case 'region':
+                } elseif ($attributeCode === 'region') {
                     $regionDataObject->setRegion($value);
-                    break;
-                default:
+                } else {
                     $addressData[$attributeCode] = $value;
+                }
             }
         }
+
         $addressDataObject = $this->addressDataFactory->create();
-        $this->dataObjectHelper->populateWithArray(
-            $addressDataObject,
-            $addressData,
-            '\Magento\Customer\Api\Data\AddressInterface'
-        );
+        $this->dataObjectHelper->populateWithArray($addressDataObject, $addressData, '\Magento\Customer\Api\Data\AddressInterface');
         $addressDataObject->setRegion($regionDataObject);
 
-        $addressDataObject->setIsDefaultBilling(
-            $this->getRequest()->getParam('default_billing', false)
-        )->setIsDefaultShipping(
-            $this->getRequest()->getParam('default_shipping', false)
-        );
-        return $addressDataObject;
+        $addressDataObject->setIsDefaultBilling($this->getRequest()->getParam('default_billing', false));
+        $addressDataObject->setIsDefaultBilling($this->getRequest()->getParam('default_billing', false))
+                          ->setIsDefaultShipping($this->getRequest()->getParam('default_shipping', false));
     }
 
-    /**
-     * Create customer account action
-     *
-     * @return void
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
     public function execute()
     {
         $data = $this->getRequest()->getPostValue();
-        /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultRedirectFactory->create();
+
+        // If the user is already logged in or registration is not allowed, redirect to the account page
         if ($this->session->isLoggedIn() || !$this->registration->isAllowed()) {
-            $resultRedirect->setPath('*/*/');
+            $resultRedirect->setPath('*/*/');  // Redirect to account page
             return $resultRedirect;
         }
 
-        // create affilicate
+        // Check if the affiliate account exists
         $emailCustomer = $this->session->getCustomer()->getEmail();
         $checkAccountExist = $this->_accountAffiliate->checkAccountExist($emailCustomer);
+
+        // Log the status of affiliate account check
+        $this->_logger->info('Affiliate account check for email ' . $emailCustomer . ' returned: ' . $checkAccountExist);
+
+        // If the account does not exist, create affiliate account
         if ($this->session->isLoggedIn() && $checkAccountExist == '0') {
             $customerData = $this->session->getCustomer();
-
             $this->_affiliateData->createAffiliateAccount($data, $customerData);
-
-            $resultRedirect->setPath('*/*/edit');
+            $resultRedirect->setPath('*/*/edit');  // Redirect to the edit page after successful creation
             return $resultRedirect;
         }
 
@@ -295,6 +166,7 @@ class CreatePost extends \Magento\Customer\Controller\AbstractAccount
             $address = $this->extractAddress();
             $addresses = $address === null ? [] : [$address];
 
+            // Create the customer account
             $customer = $this->customerExtractor->extract('customer_account_create', $this->_request);
             $customer->setAddresses($addresses);
 
@@ -307,116 +179,67 @@ class CreatePost extends \Magento\Customer\Controller\AbstractAccount
             $customer = $this->accountManagement
                 ->createAccount($customer, $password, $redirectUrl);
 
-            // Create afiliate account
+            // Log successful account creation
+            $this->_logger->info('Customer account created successfully for email: ' . $customer->getEmail());
+
+            // Create affiliate account after customer account is created
             $this->_affiliateData->createAffiliateAccount($data, $customer);
 
+            // Optionally subscribe to newsletter
             if ($this->getRequest()->getParam('is_subscribed', false)) {
                 $this->subscriberFactory->create()->subscribeCustomerById($customer->getId());
             }
 
-            $this->_eventManager->dispatch(
-                'customer_register_success',
-                ['account_controller' => $this, 'customer' => $customer]
-            );
+            $this->_eventManager->dispatch('customer_register_success', ['account_controller' => $this, 'customer' => $customer]);
 
             $confirmationStatus = $this->accountManagement->getConfirmationStatus($customer->getId());
             if ($confirmationStatus === AccountManagementInterface::ACCOUNT_CONFIRMATION_REQUIRED) {
                 $email = $this->customerUrl->getEmailConfirmationUrl($customer->getEmail());
-                // @codingStandardsIgnoreStart
                 $this->messageManager->addSuccess(
-                    __(
-                        'You must confirm your account. Please check your email for the confirmation link or <a href="%1">click here</a> for a new link.',
-                        $email
-                    )
+                    __('You must confirm your account. Please check your email for the confirmation link or <a href="%1">click here</a> for a new link.', $email)
                 );
-                // @codingStandardsIgnoreEnd
-                $url = $this->urlModel->getUrl('*/*/index', ['_secure' => true]);
-                $resultRedirect->setUrl($this->_redirect->success($url));
+                $resultRedirect->setUrl($this->_redirect->success($this->urlModel->getUrl('*/*/index', ['_secure' => true])));
+
             } else {
                 $this->session->setCustomerDataAsLoggedIn($customer);
                 $this->messageManager->addSuccess($this->getSuccessMessage());
+
+                // Fix for redirect loop
                 $requestedRedirect = $this->accountRedirect->getRedirectCookie();
                 if (!$this->scopeConfig->getValue('customer/startup/redirect_dashboard') && $requestedRedirect) {
                     $resultRedirect->setUrl($this->_redirect->success($requestedRedirect));
                     $this->accountRedirect->clearRedirectCookie();
                     return $resultRedirect;
                 }
+
+                // Fix for redirect loop, fallback to account dashboard or default URL
                 $resultRedirect = $this->accountRedirect->getRedirect();
-            }
-            if ($this->getCookieManager()->getCookie('mage-cache-sessid')) {
-                $metadata = $this->getCookieMetadataFactory()->createCookieMetadata();
-                $metadata->setPath('/');
-                $this->getCookieManager()->deleteCookie('mage-cache-sessid', $metadata);
             }
 
             return $resultRedirect;
         } catch (StateException $e) {
+            $this->_logger->error('Account creation failed: ' . $e->getMessage());
             $url = $this->urlModel->getUrl('customer/account/forgotpassword');
-            // @codingStandardsIgnoreStart
             $message = __(
                 'There is already an account with this email address. If you are sure that it is your email address, <a href="%1">click here</a> to get your password and access your account.',
                 $url
             );
-            // @codingStandardsIgnoreEnd
             $this->messageManager->addError($message);
         } catch (InputException $e) {
+            $this->_logger->error('Input error during account creation: ' . $e->getMessage());
             $this->messageManager->addError($this->escaper->escapeHtml($e->getMessage()));
             foreach ($e->getErrors() as $error) {
                 $this->messageManager->addError($this->escaper->escapeHtml($error->getMessage()));
             }
         } catch (LocalizedException $e) {
+            $this->_logger->error('Localized error: ' . $e->getMessage());
             $this->messageManager->addError($this->escaper->escapeHtml($e->getMessage()));
         } catch (\Exception $e) {
-            $this->messageManager->addException($e, __('We can\'t save the customer.'));
+            $this->_logger->critical('Unexpected error during account creation: ' . $e->getMessage());
+            $this->messageManager->addError(__('Something went wrong while creating your account.'));
         }
 
-        $this->session->setCustomerFormData($this->getRequest()->getPostValue());
-        $defaultUrl = $this->urlModel->getUrl('*/*/create', ['_secure' => true]);
-        $resultRedirect->setUrl($this->_redirect->error($defaultUrl));
+        $resultRedirect->setPath('*/*/create');
         return $resultRedirect;
-    }
-
-    /**
-     * Make sure that password and password confirmation matched
-     *
-     * @param string $password
-     * @param string $confirmation
-     * @return void
-     * @throws InputException
-     */
-    protected function checkPasswordConfirmation($password, $confirmation)
-    {
-        if ($password != $confirmation) {
-            throw new InputException(__('Please make sure your passwords match.'));
-        }
-    }
-
-    /**
-     * Retrieve success message
-     *
-     * @return string
-     */
-    protected function getSuccessMessage()
-    {
-        if ($this->addressHelper->isVatValidationEnabled()) {
-            if ($this->addressHelper->getTaxCalculationAddressType() == Address::TYPE_SHIPPING) {
-                // @codingStandardsIgnoreStart
-                $message = __(
-                    'If you are a registered VAT customer, please <a href="%1">click here</a> to enter your shipping address for proper VAT calculation.',
-                    $this->urlModel->getUrl('customer/address/edit')
-                );
-                // @codingStandardsIgnoreEnd
-            } else {
-                // @codingStandardsIgnoreStart
-                $message = __(
-                    'If you are a registered VAT customer, please <a href="%1">click here</a> to enter your billing address for proper VAT calculation.',
-                    $this->urlModel->getUrl('customer/address/edit')
-                );
-                // @codingStandardsIgnoreEnd
-            }
-        } else {
-            $message = __('Thank you for registering with %1.', $this->storeManager->getStore()->getFrontendName());
-        }
-        return $message;
     }
 }

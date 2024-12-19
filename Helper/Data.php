@@ -21,6 +21,7 @@
 
 namespace Lof\Affiliate\Helper;
 
+use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Customer\Model\Session;
 use Magento\Framework\Stdlib\DateTime\Timezone;
 use Magento\Framework\App\ObjectManager;
@@ -32,8 +33,15 @@ use Lof\Affiliate\Model\ReferingcustomerAffiliateFactory;
 use Magento\Customer\Model\Customer;
 use Magento\Framework\Event\ManagerInterface as EventManager;
 
-class Data extends \Magento\Framework\App\Helper\AbstractHelper
+class Data extends AbstractHelper
 {
+    // Example method to retrieve affiliate account by email
+    // public function getAffiliateAccountByEmail($email)
+    // {
+    //     // Logic to retrieve the account from the database
+    //     // You will need to implement this based on your database structure
+    // }
+
     /**
      * @var \Magento\Framework\View\Element\BlockFactory
      */
@@ -114,8 +122,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $_initTrackingCode = "";
 
     protected $_campaign_conditions = [];
-
-    public function __construct(
+public function __construct(
         \Magento\Framework\App\Helper\Context $context,
         \Magento\Framework\View\Element\BlockFactory $blockFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
@@ -205,12 +212,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             $serial_number = $this->_trackcode->generate();
             $serial_number = $prefix . $serial_number . $surfix;
         } else {
-            $serial_number = uniqid();
+            $serial_number = bin2hex(random_bytes(16));
         }
 
         return $serial_number;
     }
-
+    public function getAffiliateAccountByEmail($email)
+    {
+        $customer = $this->getDataCustomerByEmail($email);
+        if ($customer) {
+            $accountModel = $this->_objectManager->create('Lof\Affiliate\Model\AccountAffiliate');
+            $accountModel->loadByAttribute('customer_id', $customer->getId());
+            return $accountModel->getData();
+        }
+        return null;
+    }
     public function getConfig($key, $store = null, $default = '')
     {
         $store = $this->_storeManager->getStore($store);
@@ -1436,4 +1452,3 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         ];
     }
 }
-

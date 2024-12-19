@@ -19,7 +19,27 @@
  * @license    https://landofcoder.com/LICENSE-1.0.html
  */
 
-namespace Lof\Affiliate\Model;
+ namespace Lof\Affiliate\Model;
+
+ use Magento\Framework\Model\AbstractModel;
+
+class Account extends AbstractModel
+{
+    protected $_idFieldName = 'affiliate_account_id';  // Primary key field
+    protected $_primaryKey = 'affiliate_account_id';
+    protected $_isPkAutoIncrement = true;
+
+    /**
+     * Load affiliate account by email
+     *
+     * @param string $email
+     * @return Account
+     */
+    public function loadByEmail($email)
+    {
+        return $this->load($email, 'email');  // Adjust if needed (e.g., 'email' must be a valid field in your table)
+    }
+}
 
 use Magento\Customer\Model\Session;
 use Lof\Affiliate\Api\Data\AccountInterface;
@@ -141,26 +161,26 @@ class AccountAffiliate extends \Magento\Framework\Model\AbstractModel implements
         return [self::STATUS_ENABLED => __('Enabled'), self::STATUS_DISABLED => __('Disabled')];
     }
 
-    /**
-     * get group id by customer id
-     *
-     * @param int $customerId
-     * @return int
-     */
-    public function getGroupId($customerId = 0)
-    {
-        if ($this->hasData("group_id")) {
-            return $this->getData("group_id");
+  /**
+ * Get group id by customer id
+ *
+ * @param int $customerId
+ * @return int
+ */
+public function getGroupId($customerId = 0)
+{
+    if ($this->hasData("group_id")) {
+        return $this->getData("group_id");
+    } else {
+        $account = $this->load($customerId, 'customer_id');
+        $data = $account->getData();
+        if (!empty($data) && isset($data['group_id'])) {
+            return $data['group_id'];
         } else {
-            $account = $this->load($customerId, 'customer_id');
-            $data = $account->getData();
-            if (!empty($data)) {
-                return $data['group_id'];
-            } else {
-                return -1;
-            }
+            return -1; // Default or error value when no group_id is found
         }
     }
+}
 
     /**
      * check affiliate exists by customer id

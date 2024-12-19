@@ -25,6 +25,8 @@ use Magento\Framework\Controller\ResultFactory;
 use Magento\Backend\App\Action\Context;
 use Magento\Ui\Component\MassAction\Filter;
 use Lof\Affiliate\Model\ResourceModel\AccountAffiliate\CollectionFactory;
+use Magento\Framework\Exception\LocalizedException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class MassEnable
@@ -42,14 +44,27 @@ class MassEnable extends \Magento\Backend\App\Action
     protected $collectionFactory;
 
     /**
-     * @param Context
-     * @param Filter
-     * @param CollectionFactory
+     * @var LoggerInterface
      */
-    public function __construct(Context $context, Filter $filter, CollectionFactory $collectionFactory)
-    {
+    protected $logger;
+
+    /**
+     * MassEnable constructor.
+     *
+     * @param Context $context
+     * @param Filter $filter
+     * @param CollectionFactory $collectionFactory
+     * @param LoggerInterface $logger
+     */
+    public function __construct(
+        Context $context,
+        Filter $filter,
+        CollectionFactory $collectionFactory,
+        LoggerInterface $logger
+    ) {
         $this->filter = $filter;
         $this->collectionFactory = $collectionFactory;
+        $this->logger = $logger; // Injecting the logger for debugging
         parent::__construct($context);
     }
 
@@ -57,26 +72,46 @@ class MassEnable extends \Magento\Backend\App\Action
      * Execute action
      *
      * @return \Magento\Backend\Model\View\Result\Redirect
-     * @throws \Magento\Framework\Exception\LocalizedException|\Exception
+     * @throws LocalizedException
+     * @throws \Exception
      */
     public function execute()
     {
+        // Get the filtered collection based on selected items in the grid
         $collection = $this->filter->getCollection($this->collectionFactory->create());
 
-        foreach ($collection as $item) {
-            $item->setIsActive(true);
-            $item->save();
+        // Log the size of the collection for debugging purposes
+        $this->logger->debug('Selected Items Size: ' . $collection->getSize());
+
+        // Check if any items were selected in the grid
+        if ($collection->getSize() == 0) {
+            // Log that no items were selected
+            $this->logger->debug('No items selected for mass enable.');
+            
+            // Throw an exception with a user-friendly message
+            throw new LocalizedException(__('An item needs to be selected. Select and try again.'));
         }
 
+        // Iterate through the collection and enable each selected item
+        foreach ($collection as $item) {
+            $item->setIsActive(true);  // Enable the item
+            $item->save();  // Save the changes
+        }
+
+        // Add a success message with the number of records that were enabled
         $this->messageManager->addSuccess(__('A total of %1 record(s) have been enabled.', $collection->getSize()));
 
+        // Redirect back to the grid page
         /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-        return $resultRedirect->setPath('*/*/');
+        return $resultRedirect->setPath('*/*/'); // Redirect to the list of accounts
     }
 
     /**
      * {@inheritdoc}
+     * Check if the user has permission to execute this action
+     *
+     * @return bool
      */
     protected function _isAllowed()
     {

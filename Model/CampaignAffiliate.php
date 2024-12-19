@@ -25,125 +25,40 @@ use Lof\Affiliate\Api\Data\CampaignInterface;
 
 class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements CampaignInterface
 {
-
-
-    /**
-     * Store rule combine conditions model
-     *
-     * @var \Magento\Rule\Model\Condition\Combine
-     */
-    protected $_conditions;
-
-    /**
-     * Store rule actions model
-     *
-     * @var \Magento\Rule\Model\Action\Collection
-     */
-    protected $_actions;
-
-    /**
-     * Store rule form instance
-     *
-     * @var \Magento\Framework\Data\Form
-     */
-    protected $_form;
-
-    /**
-     * Is model can be deleted flag
-     *
-     * @var bool
-     */
-    protected $_isDeleteable = true;
-
-    /**
-     * Is model readonly
-     *
-     * @var bool
-     */
-    protected $_isReadonly = false;
-
-    /**
-     * Statuses
-     */
+    // Constants for statuses and actions
     const STATUS_ENABLED = 1;
     const STATUS_DISABLED = 0;
 
-    /**
-     * URL Model instance
-     * @var \Magento\Framework\UrlInterface
-     */
-    protected $_url;
-
-    protected $_campaignlHelper;
-    protected $_campaignFactory;
-
-    protected $_resource;
-    protected $_resourceModel;
-
-    protected $session;
-
-    /**
-     * Rule type actions
-     */
     const TO_PERCENT_ACTION = 'to_percent';
-
     const BY_PERCENT_ACTION = 'by_percent';
-
     const TO_FIXED_ACTION = 'to_fixed';
-
     const BY_FIXED_ACTION = 'by_fixed';
-
     const CART_FIXED_ACTION = 'cart_fixed';
-
     const BUY_X_GET_Y_ACTION = 'buy_x_get_y';
 
-    /**
-     * Prefix of model events names
-     *
-     * @var string
-     */
+    // Model properties
+    protected $_conditions;
+    protected $_actions;
+    protected $_form;
+    protected $_isDeleteable = true;
+    protected $_isReadonly = false;
+    protected $_url;
+    protected $_campaignlHelper;
+    protected $_campaignFactory;
+    protected $_resource;
+    protected $_resourceModel;
+    protected $session;
     protected $_eventPrefix = 'salesrule_rule';
-
-    /**
-     * Parameter name in event
-     *
-     * In observe method you can use $observer->getEvent()->getRule() in this case
-     *
-     * @var string
-     */
     protected $_eventObject = 'rule';
-
-    /**
-     * @var \Magento\SalesRule\Model\Rule\Condition\CombineFactory
-     */
     protected $_condCombineFactory;
-
-    /**
-     * @var \Magento\SalesRule\Model\Rule\Condition\Product\CombineFactory
-     */
     protected $_condProdCombineF;
-
-    /**
-     * Store already validated addresses and validation results
-     *
-     * @var array
-     */
     protected $_validatedAddresses = [];
-
-    /**
-     * Form factory
-     *
-     * @var \Magento\Framework\Data\FormFactory
-     */
     protected $_formFactory;
-
-    /**
-     * Timezone instance
-     *
-     * @var \Magento\Framework\Stdlib\DateTime\TimezoneInterface
-     */
     protected $_localeDate;
 
+    /**
+     * Constructor
+     */
     public function __construct(
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
@@ -170,6 +85,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
         $this->_condCombineFactory = $condCombineFactory;
         $this->_condProdCombineF = $condProdCombineF;
         $this->session = $customerSession;
+
         parent::__construct(
             $context,
             $registry,
@@ -182,7 +98,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * @return void
+     * Initialize the model
      */
     protected function _construct()
     {
@@ -193,10 +109,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
     /**
      * Initialize rule model data from array.
-     * Set store labels if applicable.
-     *
-     * @param array $data
-     * @return $this
      */
     public function loadPost(array $data)
     {
@@ -211,8 +123,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
     /**
      * Get rule condition combine model instance
-     *
-     * @return \Magento\SalesRule\Model\Rule\Condition\Combine
      */
     public function getConditionsInstance()
     {
@@ -221,8 +131,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
     /**
      * Get rule condition product combine model instance
-     *
-     * @return \Magento\SalesRule\Model\Rule\Condition\Product\Combine
      */
     public function getActionsInstance()
     {
@@ -231,8 +139,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
     /**
      * Get sales rule customer group Ids
-     *
-     * @return array
      */
     public function getCustomerGroupIds()
     {
@@ -245,9 +151,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
     /**
      * Get Rule label by specified store
-     *
-     * @param \Magento\Store\Model\Store|int|bool|null $store
-     * @return string|bool
      */
     public function getStoreLabel($store = null)
     {
@@ -264,9 +167,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * Set if not yet and retrieve rule store labels
-     *
-     * @return array
+     * Set and retrieve rule store labels
      */
     public function getStoreLabels()
     {
@@ -279,81 +180,20 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * @return string
+     * Getter and Setter methods for properties
      */
     public function getFromDate()
     {
         return $this->getData('from_date');
     }
 
-    /**
-     * @return string
-     */
     public function getToDate()
     {
         return $this->getData('to_date');
     }
 
     /**
-     * Check cached validation result for specific address
-     *
-     * @param Address $address
-     * @return bool
-     */
-    public function hasIsValidForAddress($address)
-    {
-        $addressId = $this->_getAddressId($address);
-        return isset($this->_validatedAddresses[$addressId]) ? true : false;
-    }
-
-    /**
-     * Set validation result for specific address to results cache
-     *
-     * @param Address $address
-     * @param bool $validationResult
-     * @return $this
-     */
-    public function setIsValidForAddress($address, $validationResult)
-    {
-        $addressId = $this->_getAddressId($address);
-        $this->_validatedAddresses[$addressId] = $validationResult;
-        return $this;
-    }
-
-    /**
-     * Get cached validation result for specific address
-     *
-     * @param Address $address
-     * @return bool
-     * @SuppressWarnings(PHPMD.BooleanGetMethodName)
-     */
-    public function getIsValidForAddress($address)
-    {
-        $addressId = $this->_getAddressId($address);
-        return isset($this->_validatedAddresses[$addressId]) ? $this->_validatedAddresses[$addressId] : false;
-    }
-
-    /**
-     * Return id for address
-     *
-     * @param Address $address
-     * @return string
-     */
-    private function _getAddressId($address)
-    {
-        if ($address instanceof Address) {
-            return $address->getId();
-        }
-        return $address;
-    }
-
-    //--My FUNCTION ================================================================================
-
-    /**
-     * Prevent blocks recursion
-     *
-     * @return \Magento\Framework\Model\AbstractModel
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * Prevent blocks recursion before saving
      */
     public function beforeSave()
     {
@@ -368,10 +208,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * [loadByAttribute]
-     * @param  [type] $attribute
-     * @param  [type] $value
-     * @return [type]
+     * Load by attribute
      */
     public function loadByAttribute($attribute, $value)
     {
@@ -379,6 +216,9 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
         return $this;
     }
 
+    /**
+     * Get list of campaigns based on display and group_id
+     */
     public function loadListByAttribute($display_is_guest, $group_id = 0)
     {
         $rows = [];
@@ -387,7 +227,6 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
         $select = $connection->select()->from(['ca' => $table_name]);
 
         if ($display_is_guest == '1') {
-            // Allow Guest see
             $select->where('ca.display = ?', $display_is_guest);
         } else {
             $select->where('ca.display = ?', $display_is_guest)->where('ca.group_id = ?', $group_id);
@@ -395,16 +234,11 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
 
         $rows = $connection->fetchAll($select);
 
-        //echo "<pre>"; print_r($rows); die;
-
         return $rows;
     }
 
     /**
-     * Prepare page's statuses.
-     * Available event cms_page_get_available_statuses to customize statuses.
-     *
-     * @return array
+     * Get available statuses
      */
     public function getAvailableStatuses()
     {
@@ -412,8 +246,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * [getYesNoField]
-     * @return [array]
+     * Get Yes/No field options
      */
     public function getYesNoField()
     {
@@ -421,87 +254,75 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     }
 
     /**
-     * [getDiscountField]
-     * @return [array]
+     * Get Discount options
      */
     public function getDiscountField()
     {
-        return ['by_percent' => __('Percent of current cart total'),
-            'cart_fixed' => __('Fixed Amount Commission For Whole Cart')];
+        return [
+            'by_percent' => __('Percent of current cart total'),
+            'cart_fixed' => __('Fixed Amount Commission For Whole Cart')
+        ];
     }
 
     /**
-     * [getDisplayField]
-     * @return [array]
+     * Get Display options
      */
     public function getDisplayField()
     {
-        return [self::STATUS_ENABLED => __('Allow Guest'), self::STATUS_DISABLED => __('Affiliate Member Only')];
+        return [
+            self::STATUS_ENABLED => __('Allow Guest'),
+            self::STATUS_DISABLED => __('Affiliate Member Only')
+        ];
     }
 
     /**
-     * [getGroupType]
-     * @return [array]
+     * Get Group Type options
      */
     public function getGroupType()
     {
         $data = [];
-
         $table_name = $this->_resourceModel->getTableName('lof_affiliate_group');
         $connection = $this->_resource->getConnection();
-        $select = $connection->select()->from(
-            ['ce' => $table_name],
-            ['group_id', 'name']
-        );
+        $select = $connection->select()->from(['ce' => $table_name], ['group_id', 'name']);
         $rows = $connection->fetchAll($select);
 
         foreach ($rows as $key => $result) {
             $data[$result['group_id']] = $result['name'];
         }
-        if (empty($data)) {
-            return [0 => 'Default'];
-        }
 
-        return $data;
+        return empty($data) ? [0 => 'Default'] : $data;
     }
 
     /**
-     * [getListCampaigns]
-     * @param  [int] $group_id
-     * @return [array]
+     * Get list of campaigns based on group_id
      */
     public function getListCampaigns($group_id)
     {
         $table_name = $this->_resourceModel->getTableName('lof_affiliate_campaign');
         $connection = $this->_resource->getConnection();
-        $select = $connection->select()->from(
-            ['ca' => $table_name]
-        );
+        $select = $connection->select()->from(['ca' => $table_name]);
         $select->where('ca.group_id = ?', $group_id)
             ->where('ca.is_active=?', 1);
 
-        $rows = $connection->fetchAll($select);
-
-        //echo "<pre>"; print_r($rows); die;
-
-        return $rows;
+        return $connection->fetchAll($select);
     }
 
+    /**
+     * Get campaigns by date range
+     */
     public function getListCampaignsByDate($campaign_code, $currentDate)
     {
         $table_name = $this->_resourceModel->getTableName('lof_affiliate_campaign');
         $connection = $this->_resource->getConnection();
-        $select = $connection->select()->from(
-            ['ca' => $table_name]
-        );
-        $select->where('ca.to_date >= "' . $currentDate . '"');
-        $select->where('ca.from_date < "' . $currentDate . '"');
-        $select->where('ca.tracking_code = ?', $campaign_code);
+        $select = $connection->select()->from(['ca' => $table_name])
+            ->where('ca.to_date >= ?', $currentDate)
+            ->where('ca.from_date < ?', $currentDate)
+            ->where('ca.tracking_code = ?', $campaign_code);
 
-        $rows = $connection->fetchRow($select);
-
-        return $rows;
+        return $connection->fetchRow($select);
     }
+
+    // Getter and Setter methods for campaign properties
 
     public function getId()
     {
@@ -542,6 +363,7 @@ class CampaignAffiliate extends \Magento\Rule\Model\AbstractModel implements Cam
     {
         return $this->setData(self::DISPLAY, $display);
     }
+
     public function setFromDate($from_date)
     {
         return $this->setData(self::FROM_DATE, $from_date);

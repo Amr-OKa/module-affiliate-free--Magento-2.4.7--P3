@@ -29,8 +29,22 @@ $start       = $size - (($currentPage - 1) * $limit);
                     <tr>
                         <td data-th="<?= $block->escapeHtml(__('Id')) ?>" class="col id"><?php /* @escapeNotVerified */ echo $_collection->getId() ?></td>
                         <td data-th="<?= $block->escapeHtml(__('Campaign')) ?>" class="col"><?php /* @escapeNotVerified */ echo $_collection->getName() ?></td>
-                        <td data-th="<?= $block->escapeHtml(__('Start Date')) ?>" class="col"><?= date('d-m-Y', strtotime($_collection->getFromDate())); ?></td>
-                        <td data-th="<?= $block->escapeHtml(__('End Date')) ?>" class="col"><?= date('d-m-Y', strtotime($_collection->getToDate())); ?></td>
+                        <td data-th="<?= $block->escapeHtml(__('Start Date')) ?>" class="col">
+                            <?php
+                                // Check if FromDate is null before using strtotime
+                                $fromDate = $_collection->getFromDate();
+                                $startDate = $fromDate ? date('d-m-Y', strtotime($fromDate)) : date('d-m-Y'); // Fallback to current date
+                                echo $startDate;
+                            ?>
+                        </td>
+                        <td data-th="<?= $block->escapeHtml(__('End Date')) ?>" class="col">
+                            <?php
+                                // Check if ToDate is null before using strtotime
+                                $toDate = $_collection->getToDate();
+                                $endDate = $toDate ? date('d-m-Y', strtotime($toDate)) : date('d-m-Y'); // Fallback to current date
+                                echo $endDate;
+                            ?>
+                        </td>
                         <td data-th="<?= $block->escapeHtml(__('Total Commission')) ?>" class="col"><?= $this->getTotalCommission($_collection->getTrackingCode()); ?></td>
                     </tr>
                     <!-- Modal -->

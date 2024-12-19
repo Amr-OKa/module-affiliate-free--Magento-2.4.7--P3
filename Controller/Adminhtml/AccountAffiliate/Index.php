@@ -22,8 +22,11 @@
 namespace Lof\Affiliate\Controller\Adminhtml\AccountAffiliate;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\View\Result\PageFactory;
+use Magento\Framework\Registry;
+use Magento\Framework\App\Action\Action;
 
-class Index extends \Magento\Backend\App\Action
+class Index extends Action
 {
     /**
      * Core registry
@@ -38,16 +41,15 @@ class Index extends \Magento\Backend\App\Action
     protected $resultPageFactory;
 
     /**
-     * @param Context
-     * @param \Magento\Framework\View\Result\PageFactory
-     * @param \Magento\Framework\Registry
+     * @param Context $context
+     * @param PageFactory $resultPageFactory
+     * @param Registry $registry
      */
     public function __construct(
         Context $context,
-        \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \Magento\Framework\Registry $registry
-    )
-    {
+        PageFactory $resultPageFactory,
+        Registry $registry
+    ) {
         $this->resultPageFactory = $resultPageFactory;
         $this->_coreRegistry = $registry;
         parent::__construct($context);
@@ -63,24 +65,33 @@ class Index extends \Magento\Backend\App\Action
         return $this->_authorization->isAllowed('Lof_Affiliate::account');
     }
 
+    /**
+     * Execute action
+     *
+     * @return \Magento\Framework\View\Result\Page
+     */
     public function execute()
     {
+        try {
+            // Ensure that the result page is correctly created
+            $resultPage = $this->resultPageFactory->create();
 
-        $resultPage = $this->resultPageFactory->create();
+            // Set active menu item
+            $resultPage->setActiveMenu("Lof_Affiliate::account_settings");
 
-        /**
-         * Set active menu item
-         */
-        $resultPage->setActiveMenu("Lof_Affiliate::account_settings");
-        $resultPage->getConfig()->getTitle()->prepend(__('Account Affiliate'));
+            // Set page title
+            $resultPage->getConfig()->getTitle()->prepend(__('Account Affiliate'));
 
-        /**
-         * Add breadcrumb item
-         */
-        $resultPage->addBreadcrumb(__('Lof_Affiliate'), __('Account Affiliate'));
-        $resultPage->addBreadcrumb(__('Manage Account Affiliate'), __('Manage Account Affiliate'));
+            // Add breadcrumb item
+            $resultPage->addBreadcrumb(__('Lof_Affiliate'), __('Account Affiliate'));
+            $resultPage->addBreadcrumb(__('Manage Account Affiliate'), __('Manage Account Affiliate'));
 
-        return $resultPage;
+            return $resultPage;
+        } catch (\Exception $e) {
+            // Log the error for easier debugging
+            $this->_logger->critical($e->getMessage());
+            // Handle the error gracefully by returning a proper response
+            return $this->_redirect('*/*/index');
+        }
     }
-
 }
