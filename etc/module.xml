@@ -21,27 +21,9 @@
  */
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-    <module name="Lof_Affiliate" setup_version="1.0.10">
-        <sequence>
+    <module name="Lof_Affiliate" setup_version="1.0.10" >
+    	<sequence>
             <module name="Magento_Checkout"/>
         </sequence>
     </module>
-
-    <!-- UI Component Definition -->
-    <frontend>
-        <router id="lof_affiliate">
-            <route frontName="affiliate">
-                <module name="Lof_Affiliate" />
-            </route>
-        </router>
-    </frontend>
-
-    <adminhtml>
-        <!-- Add your UI Component XML for Admin -->
-        <layout>
-            <updates>
-                <update handle="adminhtml"/>
-            </updates>
-        </layout>
-    </adminhtml>
 </config>

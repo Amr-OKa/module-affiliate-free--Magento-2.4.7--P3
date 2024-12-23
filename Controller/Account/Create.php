@@ -154,7 +154,7 @@ class Create extends Action implements HttpGetActionInterface
     public function execute()
     {
         // Ensure the user is logged in and registration is allowed
-        if (!$this->session->isLoggedIn() || !$this->registration->isAllowed()) {
+        if ($this->session->isLoggedIn() && $this->registration->isAllowed()) {
             $customerData = $this->session->getCustomer();
 
             try {

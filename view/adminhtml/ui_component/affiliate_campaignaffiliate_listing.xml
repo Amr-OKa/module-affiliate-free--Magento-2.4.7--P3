@@ -36,11 +36,9 @@
             </item>
         </item>
     </argument>
-
-    <!-- Data Source -->
     <dataSource name="affiliate_campaignaffiliate_listing_data_source">
         <argument name="dataProvider" xsi:type="configurableObject">
-            <argument name="class" xsi:type="string">Lof\Affiliate\Ui\Component\Listing\CampaignAffiliateGridDataProvider</argument>
+            <argument name="class" xsi:type="string">CampaignAffiliateGridDataProvider</argument>
             <argument name="name" xsi:type="string">affiliate_campaignaffiliate_listing_data_source</argument>
             <argument name="primaryFieldName" xsi:type="string">campaign_id</argument>
             <argument name="requestFieldName" xsi:type="string">id</argument>
@@ -54,9 +52,12 @@
                 </item>
             </argument>
         </argument>
+        <argument name="data" xsi:type="array">
+            <item name="js_config" xsi:type="array">
+                <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+            </item>
+        </argument>
     </dataSource>
-
-    <!-- Listing Toolbar -->
     <listingToolbar name="listing_top">
         <argument name="data" xsi:type="array">
             <item name="config" xsi:type="array">
@@ -111,6 +112,12 @@
                             </item>
                         </item>
                     </item>
+                    <item name="childDefaults" xsi:type="array">
+                        <item name="provider" xsi:type="string">affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_listing.listing_top.listing_filters</item>
+                        <item name="imports" xsi:type="array">
+                            <item name="visible" xsi:type="string">affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_columns.${ $.index }:visible</item>
+                        </item>
+                    </item>
                 </item>
                 <item name="observers" xsi:type="array">
                     <item name="column" xsi:type="string">column</item>
@@ -131,8 +138,6 @@
             </filterSelect>
 
         </filters>
-
-        <!-- Mass Actions -->
         <massaction name="listing_massaction">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
@@ -145,7 +150,7 @@
                     <item name="config" xsi:type="array">
                         <item name="type" xsi:type="string">delete</item>
                         <item name="label" xsi:type="string" translate="true">Delete</item>
-                        <item name="url" xsi:type="url" path="affiliate/campaignaffiliate/massDelete"/>
+                        <item name="url"  xsi:type="url" path="affiliate/campaignaffiliate/massDelete"/>
                         <item name="confirm" xsi:type="array">
                             <item name="title" xsi:type="string" translate="true">Delete items</item>
                             <item name="message" xsi:type="string" translate="true">Are you sure you wan't to delete selected items?</item>
@@ -172,8 +177,6 @@
                 </argument>
             </action>
         </massaction>
-
-        <!-- Paging -->
         <paging name="listing_paging">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
@@ -186,39 +189,144 @@
             </argument>
         </paging>
     </listingToolbar>
-
-    <!-- Columns -->
     <columns name="affiliate_campaignaffiliate_columns">
         <argument name="data" xsi:type="array">
             <item name="config" xsi:type="array">
                 <item name="storageConfig" xsi:type="array">
                     <item name="provider" xsi:type="string">affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_listing.listing_top.bookmarks</item>
-                    <item name="namespace" xsi:type="string">current.filters</item>
+                    <item name="namespace" xsi:type="string">current</item>
                 </item>
-                <item name="indexField" xsi:type="string">campaign_id</item>
+                <item name="childDefaults" xsi:type="array">
+                    <item name="fieldAction" xsi:type="array">
+                        <item name="provider" xsi:type="string">affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_columns_editor</item>
+                        <item name="target" xsi:type="string">startEdit</item>
+                        <item name="params" xsi:type="array">
+                            <item name="0" xsi:type="string">${ $.$data.rowIndex }</item>
+                            <item name="1" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                    <item name="storageConfig" xsi:type="array">
+                        <item name="provider" xsi:type="string">affiliate_campaignaffiliate_listing.affiliate_campaignaffiliate_listing.listing_top.bookmarks</item>
+                        <item name="root" xsi:type="string">columns.${ $.index }</item>
+                        <item name="namespace" xsi:type="string">current.${ $.storageConfig.root}</item>
+                    </item>
+                </item>
             </item>
         </argument>
-
-        <!-- Column Definitions -->
+        <selectionsColumn name="ids">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="resizeEnabled" xsi:type="boolean">false</item>
+                    <item name="resizeDefaultWidth" xsi:type="string">55</item>
+                    <item name="indexField" xsi:type="string">campaign_id</item>
+                </item>
+            </argument>
+        </selectionsColumn>
         <column name="campaign_id">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
-                    <item name="label" xsi:type="string" translate="true">Campaign ID</item>
-                    <item name="sortable" xsi:type="boolean">true</item>
+                    <item name="filter" xsi:type="string">textRange</item>
+                    <item name="sorting" xsi:type="string">desc</item>
+                    <item name="label" xsi:type="string" translate="true">ID</item>
                 </item>
             </argument>
         </column>
-
-        <column name="campaign_name">
+        <column name="name">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
-                    <item name="label" xsi:type="string" translate="true">Campaign Name</item>
-                    <item name="sortable" xsi:type="boolean">true</item>
+                    <item name="filter" xsi:type="string">text</item>
+                    <item name="editor" xsi:type="array">
+                        <item name="editorType" xsi:type="string">text</item>
+                        <item name="validation" xsi:type="array">
+                            <item name="required-entry" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                    <item name="label" xsi:type="string" translate="true">Name</item>
+                </item>
+            </argument>
+        </column>
+        <column name="to_date" class="Lof\Affiliate\Ui\Component\Listing\Column\Date">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">dateRange</item>
+                    <item name="dataType" xsi:type="string">date</item>
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
+                    <item name="label" xsi:type="string" translate="true">To Date</item>
+                    <item name="sortOrder" xsi:type="number">100</item>
+                </item>
+            </argument>
+        </column>
+        <column name="from_date" class="Lof\Affiliate\Ui\Component\Listing\Column\Date">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">dateRange</item>
+                    <item name="dataType" xsi:type="string">date</item>
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/date</item>
+                    <item name="label" xsi:type="string" translate="true">From Date</item>
+                    <item name="sortOrder" xsi:type="number">100</item>
+                </item>
+            </argument>
+        </column>
+        <column name="is_active">
+            <argument name="data" xsi:type="array">
+                <item name="options" xsi:type="object">Magento\Cms\Model\Page\Source\IsActive</item>
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">select</item>
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/columns/select</item>
+                    <item name="editor" xsi:type="string">select</item>
+                    <item name="dataType" xsi:type="string">select</item>
+                    <item name="label" xsi:type="string" translate="true">Status</item>
+                </item>
+            </argument>
+        </column>
+        <column name="sort_order">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">text</item>
+                    <item name="editor" xsi:type="array">
+                        <item name="editorType" xsi:type="string">text</item>
+                        <item name="validation" xsi:type="array">
+                            <item name="required-entry" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                    <item name="label" xsi:type="string" translate="true">Sort Order</item>
                 </item>
             </argument>
         </column>
 
-        <!-- Add more columns as needed -->
+        <column name="tracking_code">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="filter" xsi:type="string">text</item>
+                    <item name="editor" xsi:type="array">
+                        <item name="editorType" xsi:type="string">text</item>
+                        <item name="validation" xsi:type="array">
+                            <item name="required-entry" xsi:type="boolean">true</item>
+                        </item>
+                    </item>
+                    <item name="label" xsi:type="string" translate="true">Tracking Code</item>
+                </item>
+            </argument>
+        </column>
 
+        <column name="store_id" class="Magento\Store\Ui\Component\Listing\Column\Store">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="bodyTmpl" xsi:type="string">ui/grid/cells/html</item>
+                    <item name="sortable" xsi:type="boolean">false</item>
+                    <item name="label" xsi:type="string" translate="true">Store View</item>
+                </item>
+            </argument>
+        </column>
+
+        <actionsColumn name="actions" class="Lof\Affiliate\Ui\Component\Listing\Column\CampaignAffiliateActions">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="resizeEnabled" xsi:type="boolean">false</item>
+                    <item name="resizeDefaultWidth" xsi:type="string">107</item>
+                    <item name="indexField" xsi:type="string">campaign_id</item>
+                </item>
+            </argument>
+        </actionsColumn>
     </columns>
 </listing>

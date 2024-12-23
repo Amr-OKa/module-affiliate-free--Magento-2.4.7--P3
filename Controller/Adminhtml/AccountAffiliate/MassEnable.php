@@ -1,120 +1,54 @@
-<?php
-/**
- * Landofcoder
- *
- * NOTICE OF LICENSE
- *
- * This source file is subject to the venustheme.com license that is
- * available through the world-wide-web at this URL:
- * https://landofcoder.com/license
- *
- * DISCLAIMER
- *
- * Do not edit or add to this file if you wish to upgrade this extension to newer
- * version in the future.
- *
- * @category   Landofcoder
- * @package    Lof_Affiliate
- * @copyright  Copyright (c) 2016 Landofcoder (https://landofcoder.com)
- * @license    https://landofcoder.com/LICENSE-1.0.html
- */
+<?php 
 
 namespace Lof\Affiliate\Controller\Adminhtml\AccountAffiliate;
 
-use Magento\Framework\Controller\ResultFactory;
-use Magento\Backend\App\Action\Context;
-use Magento\Ui\Component\MassAction\Filter;
-use Lof\Affiliate\Model\ResourceModel\AccountAffiliate\CollectionFactory;
+use Magento\Backend\App\Action;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use Lof\Affiliate\Model\AccountAffiliateFactory;
 
-/**
- * Class MassEnable
- */
-class MassEnable extends \Magento\Backend\App\Action
+class MassEnable extends Action
 {
-    /**
-     * @var Filter
-     */
-    protected $filter;
+    protected $accountAffiliateFactory;
 
-    /**
-     * @var CollectionFactory
-     */
-    protected $collectionFactory;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
-     * MassEnable constructor.
-     *
-     * @param Context $context
-     * @param Filter $filter
-     * @param CollectionFactory $collectionFactory
-     * @param LoggerInterface $logger
-     */
     public function __construct(
-        Context $context,
-        Filter $filter,
-        CollectionFactory $collectionFactory,
-        LoggerInterface $logger
+        Action\Context $context,
+        AccountAffiliateFactory $accountAffiliateFactory
     ) {
-        $this->filter = $filter;
-        $this->collectionFactory = $collectionFactory;
-        $this->logger = $logger; // Injecting the logger for debugging
         parent::__construct($context);
+        $this->accountAffiliateFactory = $accountAffiliateFactory;
     }
 
     /**
-     * Execute action
+     * Execute mass enable action
      *
-     * @return \Magento\Backend\Model\View\Result\Redirect
-     * @throws LocalizedException
-     * @throws \Exception
+     * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
     {
-        // Get the filtered collection based on selected items in the grid
-        $collection = $this->filter->getCollection($this->collectionFactory->create());
+        // Get selected item IDs from the request
+        $ids = $this->getRequest()->getParam('selected', []);
 
-        // Log the size of the collection for debugging purposes
-        $this->logger->debug('Selected Items Size: ' . $collection->getSize());
-
-        // Check if any items were selected in the grid
-        if ($collection->getSize() == 0) {
-            // Log that no items were selected
-            $this->logger->debug('No items selected for mass enable.');
-            
+        // Check if no items were selected
+        if (empty($ids)) {
             // Throw an exception with a user-friendly message
             throw new LocalizedException(__('An item needs to be selected. Select and try again.'));
         }
 
-        // Iterate through the collection and enable each selected item
-        foreach ($collection as $item) {
-            $item->setIsActive(true);  // Enable the item
-            $item->save();  // Save the changes
+        // Proceed with enabling the selected items
+        $model = $this->accountAffiliateFactory->create();
+
+        foreach ($ids as $id) {
+            $model->load($id);
+            if ($model->getId()) {
+                $model->setIsEnabled(true); // Set the item as enabled
+                $model->save(); // Save the changes
+            }
         }
 
-        // Add a success message with the number of records that were enabled
-        $this->messageManager->addSuccess(__('A total of %1 record(s) have been enabled.', $collection->getSize()));
+        // Add success message
+        $this->messageManager->addSuccess(__('The selected items have been enabled.'));
 
-        // Redirect back to the grid page
-        /** @var \Magento\Backend\Model\View\Result\Redirect $resultRedirect */
-        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-        return $resultRedirect->setPath('*/*/'); // Redirect to the list of accounts
-    }
-
-    /**
-     * {@inheritdoc}
-     * Check if the user has permission to execute this action
-     *
-     * @return bool
-     */
-    protected function _isAllowed()
-    {
-        return $this->_authorization->isAllowed('Lof_Affiliate::account_save');
+        // Redirect back to the grid
+        return $this->resultRedirectFactory->create()->setPath('*/*/');
     }
 }
